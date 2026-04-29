@@ -1,0 +1,242 @@
+TOPIC
+    about_JibberishManager
+
+DESCRIPTION
+    A PowerShell module for encrypting and retrieving user
+    secrets using AES-256-CBC encryption, PBKDF2 key derivation, and a
+    two-file storage design with a locked-down vault folder.
+
+    JibberishManager stores user secrets across two JSON files. The design
+    intentionally avoids any naming that hints at passwords or secrets, making
+    the module and its files inconspicuous to a casual intruder.
+
+    The module requires no external dependencies. It runs on PowerShell 5.1
+    or later using only built-in .NET cryptography classes.
+
+  SECURITY MODEL
+  --------------
+    Three separate things are required to decrypt any credential:
+
+        1. User-Sugar.json       Contains UserID, UserName, and per-user Sugar
+                                 (random salt). Public read. No secrets here.
+        2. MyVault\
+           User-Jibberish.json  Contains UserID and the encrypted credential
+                                 blob (IV + ciphertext, base64-encoded).
+                                 ACL-restricted to the vault owner only.
+        3. JIBBERISH_MASTER      Environment variable holding the master key.
+                                 Stored at SYSTEM or USER level in the Windows
+                                 registry. Never written to disk as plaintext.
+
+    Anyone (attacker) who obtains any two of the three cannot decrypt anything.
+    All three are required.
+
+  CRYPTO CHAIN
+  ------------
+    For each user, encryption works as follows:
+
+        Random 32-byte Sugar
+              +
+        JIBBERISH_MASTER (UTF-8 bytes)
+              |
+              v
+        PBKDF2 (Rfc2898DeriveBytes, 100,000 iterations)
+              |
+              v
+        256-bit AES key  (unique per user because each sugar is unique)
+              |
+              v
+        AES-256-CBC encrypt  (fresh random 16-byte IV per call)
+              |
+              v
+        base64( [16-byte IV] || [N-byte ciphertext] )
+              |
+              v
+        Stored as Jibberish in User-Jibberish.json
+
+    Decryption reverses the chain:
+        Load Salt from User-Sugar.json
+        Derive AES key via PBKDF2 (Sugar + JIBBERISH_MASTER)
+        Split IV from first 16 bytes of the Jibberish blob
+        AES-256-CBC decrypt remaining bytes
+        Copy plaintext to clipboard for 10 seconds then clear
+
+
+  CLASSES
+  -------
+    The module defines two strongly typed PowerShell classes:
+
+        class UserSugar {
+            [int]   $UserID
+            [string]$UserName
+            [string]$Sugar        # base64-encoded random salt
+        }
+
+        class UserJibberish {
+            [int]   $UserID
+            [string]$Jibberish    # base64-encoded IV + ciphertext
+        }
+
+  FILE LAYOUT
+  -----------
+    <ModuleRoot>\
+    |
+    +-- JibberishManager.psm1       Module script
+    +-- JibberishManager.psd1       Module manifest
+    +-- User-Sugar.json             Public read  (UserID, UserName, Sugar)
+    |
+    +-- MyVault\                    ACL-restricted folder (owner only)
+        +-- User-Jibberish.json     Restricted read (UserID, Jibberish)
+
+    User-Sugar.json example:
+        [
+          { "UserID": 1, "UserName": "Alice", "Sugar": "<base64>" },
+          { "UserID": 2, "UserName": "Bob",   "Sugar": "<base64>" }
+        ]
+
+    User-Jibberish.json example:
+        [
+          { "UserID": 1, "Jibberish": "<base64 IV+cipher>" },
+          { "UserID": 2, "Jibberish": "<base64 IV+cipher>" }
+        ]
+
+  MASTER KEY STORAGE
+  ------------------
+    The master key is stored in the environment variable JIBBERISH_MASTER.
+    Set-JibberishKey attempts SYSTEM level first (machine-wide, requires
+    admin rights). If admin rights are unavailable it falls back to USER
+    level automatically.
+
+    Resolution order when reading the key (first found wins):
+        1. SYSTEM level  [System.Environment]::GetEnvironmentVariable(..., 'Machine')
+        2. USER level    [System.Environment]::GetEnvironmentVariable(..., 'User')
+        3. Session       $env:JIBBERISH_MASTER (current session only, not persisted)
+
+    Both SYSTEM and USER level survive a reboot. Session level does not.
+
+  VAULT FOLDER PERMISSIONS
+  ------------------------
+    Initialize-JibberishVault creates the MyVault folder and applies a
+    restricted ACL:
+        - Inheritance is disabled so no parent permissions bleed through.
+        - All pre-existing access rules are removed.
+        - The current user is granted Read, Write, Modify, ListDirectory,
+          CreateFiles, and Delete with ContainerInherit + ObjectInherit,
+          meaning the rule applies to the folder and all files within it.
+        - An optional second account can be granted read-only access via
+          the -ReadOnlyUser parameter (useful for service accounts that
+          only need Get-Jibberish).
+
+    Re-running Initialize-JibberishVault resets the ACL to this state,
+    which is useful if permissions have drifted.
+
+FUNCTIONS
+---------
+    SETUP
+
+    Initialize-JibberishVault
+        Creates the MyVault folder and locks its ACL to the current user.
+        Must be run once before Save-Jibberish or Get-Jibberish.
+        Supports -ReadOnlyUser and -Force parameters.
+
+    Set-JibberishKey
+        Stores the master key in JIBBERISH_MASTER. Auto-generates a
+        cryptographically random 32-byte key if -MasterKey is omitted.
+        Supports -Level Auto (default) | System | User.
+
+    CREDENTIAL MANAGEMENT
+
+    Save-Jibberish
+        Encrypts a credential and saves it to both JSON files.
+        Creates a new user entry if the username does not exist.
+        Updates only that user's Jibberish entry if it does exist.
+
+    Get-Jibberish
+        Decrypts a user's credential and copies it to the clipboard.
+        The clipboard is automatically cleared after 10 seconds (default).
+        Supports -ClipboardSeconds to override the timeout.
+
+    Remove-Jibberish
+        Removes a user's entries from both JSON files.
+        All other users are unaffected.
+
+    Get-JibberishUser
+        Lists all registered users (UserID and UserName only).
+        No sugar values or encrypted data are ever displayed.
+
+    KEY MANAGEMENT
+
+    Get-JibberishKey
+        Resolves JIBBERISH_MASTER using the three-level fallback chain.
+        Used internally by Save-Jibberish and Get-Jibberish.
+
+    Remove-JibberishKey
+        Removes JIBBERISH_MASTER from SYSTEM level, USER level, or both.
+        Supports -Level System | User | Both (default).
+
+    Test-JibberishKey
+        Returns $true if the master key is accessible, $false otherwise.
+        Useful as a pre-flight check in automation scripts.
+
+FIRST-TIME SETUP
+----------------
+    Step 1 — Import the module
+        Import-Module JibberishManager
+
+    Step 2 — Create and lock the vault folder
+        Initialize-JibberishVault
+
+    Step 3 — Store the master key
+        Set-JibberishKey
+        # or supply your own:
+        Set-JibberishKey -MasterKey 'MyStr0ngPassphrase!'
+
+    Step 4 — Add users
+        Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
+        Save-Jibberish -UserName 'Bob'   -Data 'Hunter2!'
+        Save-Jibberish -UserName 'Carol' -Data 'S3cret#99'
+
+    Step 5 — Retrieve a credential
+        Get-Jibberish -UserName 'Alice'
+        # Credential is in clipboard for 10 seconds then auto-cleared.
+
+    Step 6 — List all users
+        Get-JibberishUser
+
+    Step 7 — Update a credential
+        Save-Jibberish -UserName 'Alice' -Data 'NewP@ss!'
+
+    Step 8 — Remove a user
+        Remove-Jibberish -UserName 'Bob'
+
+NOTES
+-----
+    - No external module dependencies. Pure PowerShell 5.1 + .NET.
+    - The module name, function names, file names, and environment variable
+      name are deliberately chosen to avoid terms like Secret, Password,
+      Credential, or Key that might attract attention.
+    - Plaintext credentials are never written to disk and never printed
+      to the console. They exist in memory only for the duration of the
+      decrypt operation and are nulled immediately after being placed on
+      the clipboard.
+    - The clipboard is cleared by a background job so the calling shell
+      is never blocked during the wait.
+    - Re-encrypting an existing user's credential (Save-Jibberish on an
+      existing UserName) reuses the original sugar so the PBKDF2-derived
+      AES key remains the same. The IV is always freshly randomised so
+      the stored Jibberish blob will look different each time even for
+      the same plaintext.
+
+SEE ALSO
+--------
+    Get-Help Save-Jibberish        -Full
+    Get-Help Get-Jibberish         -Full
+    Get-Help Initialize-JibberishVault -Full
+    Get-Help Set-JibberishKey      -Full
+    Get-Help Get-JibberishUser     -Full
+    Get-Help Remove-Jibberish      -Full
+    Get-Help Remove-JibberishKey   -Full
+    Get-Help Test-JibberishKey     -Full
+
+KEYWORDS
+--------
+    Encryption, Credentials, AES, PBKDF2, Vault, SecureStorage
