@@ -4,15 +4,9 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 
 **Important Note:** This module is provided as-is and is not a replacement for enterprise-grade secret management systems.
 
-
-
 \# JibberishManager — Architecture \& Flow
 
-
-
 \## Security Model
-
-
 
 > Three separate things are required to decrypt any credential.
 
@@ -23,50 +17,24 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 ```
 
 ┌─────────────────────┐   ┌─────────────────────┐   ┌─────────────────────┐
-
-│   User-Sugar.json   │   │  User-Jibberish.json │   │  JIBBERISH\_MASTER   │
-
-│                     │   │                      │   │                     │
-
-│  UserID             │   │  UserID              │   │  Environment var    │
-
-│  UserName           │   │  Jibberish           │   │  SYSTEM or USER     │
-
-│  Sugar (base64)     │   │  (base64 IV+cipher)  │   │  level              │
-
-│                     │   │                      │   │                     │
-
-│  Public read        │   │  MyVault\\ only       │   │  Never on disk      │
-
-│  No secrets here    │   │  ACL-restricted      │   │  Survives reboot    │
-
+│   User-Sugar.json   │   │  User-Jibberish.json │   │  JIBBERISH\_MASTER │
+│                     │   │                      │   │                    │
+│  UserID             │   │  UserID              │   │  Environment var   │
+│  UserName           │   │  Jibberish           │   │  SYSTEM or USER    │
+│  Sugar (base64)     │   │  (base64 IV+cipher)  │   │  level             │
+│                     │   │                      │   │                    │
+│  Public read        │   │  MyVault\\ only      │   │  Never on disk     │
+│  No secrets here    │   │  ACL-restricted      │   │  Survives reboot   │
 └─────────────────────┘   └─────────────────────┘   └─────────────────────┘
-
-&#x20;        (1)                        (2)                        (3)
-
-&#x20;         │                          │                          │
-
-&#x20;         └──────────────────────────┴──────────────────────────┘
-
-&#x20;                                    │
-
-&#x20;                                    ▼
-
-&#x20;                           All three required
-
-&#x20;                           to decrypt anything
-
+        (1)                        (2)                        (3)
+         │                          │                          │
+         └──────────────────────────┴──────────────────────────┘
+                                    ▼
+                          All three required
+                          to decrypt anything
 ```
-
-
-
 \---
-
-
-
 \## Crypto Chain
-
-
 
 ```
 
