@@ -251,16 +251,16 @@ class UserJibberish {
 \---   
 \## First-Time Setup Sequence
 ```
-1\.  Import-Module JibberishManager
-2\.  Initialize-JibberishVault
+1.  Import-Module JibberishManager
+2.  Initialize-JibberishVault
         └──► Creates MyVault\\, locks ACL to current user
-3\.  Set-JibberishKey
+3.  Set-JibberishKey
         └──► Stores JIBBERISH\_MASTER in SYSTEM or USER env var
-4\.  Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
+4.  Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
      Save-Jibberish -UserName 'Bob'   -Data 'Hunter2!'
         └──► Encrypts and stores credentials for each user
-5\.  Get-JibberishUser
+5.  Get-JibberishUser
         └──► Lists registered users (no sensitive data shown)
-6\.  Get-Jibberish -UserName 'Alice'
+6.  Get-Jibberish -UserName 'Alice'
         └──► Decrypts to clipboard, clears after 10 seconds
 ```
