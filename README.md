@@ -12,14 +12,14 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 
 ```
 ┌─────────────────────┐   ┌─────────────────────┐   ┌─────────────────────┐
-│   User-Sugar.json   │   │  User-Jibberish.json│   │  JIBBERISH\_MASTER │
-│                     │   │                     │   │                    │
-│  UserID             │   │  UserID             │   │  Environment var   │
-│  UserName           │   │  Jibberish          │   │  SYSTEM or USER    │
-│  Sugar (base64)     │   │  (base64 IV+cipher) │   │  level             │
-│                     │   │                     │   │                    │
-│  Public read        │   │  MyVault\\ only     │   │  Never on disk     │
-│  No secrets here    │   │  ACL-restricted     │   │  Survives reboot   │
+│   User-Sugar.json   │   │  User-Jibberish.json│   │  JIBBERISH\_MASTER  │
+│                     │   │                     │   │                     │
+│  UserID             │   │  UserID             │   │  Environment var    │
+│  UserName           │   │  Jibberish          │   │  SYSTEM or USER     │
+│  Sugar (base64)     │   │  (base64 IV+cipher) │   │  level              │
+│                     │   │                     │   │                     │
+│  Public read        │   │  MyVault\\ only     │   │  Never on disk      │
+│  No secrets here    │   │  ACL-restricted     │   │  Survives reboot    │
 └─────────────────────┘   └─────────────────────┘   └─────────────────────┘
         (1)                        (2)                        (3)
          │                          │                          │
@@ -55,15 +55,15 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
           ▼
  Stored as Jibberish in User-Jibberish.json
 ```
-\---
+\---   
 \## File Layout
-```
+```   
 <ModuleRoot>\\
 │
 ├── JibberishManager.psm1          Module script
 ├── JibberishManager.psd1          Module manifest
 │
-├── en-US\\
+├── en-GB\\
 │   └── about\_JibberishManager.help.txt
 │
 ├── User-Sugar.json                Public read
@@ -235,6 +235,7 @@ class UserJibberish {
 > a PropertyNotFound error — every property is guaranteed to exist.
 \---   
 \## Function Reference
+
 | Function                   | Purpose                                         |
 |----------------------------|-------------------------------------------------|
 | `Initialize-JibberishVault`| Create MyVault folder and lock ACL              |
@@ -246,7 +247,7 @@ class UserJibberish {
 | `Get-Jibberish`            | Decrypt to clipboard, auto-clear after 10s      |
 | `Remove-Jibberish`         | Remove a user from both JSON files              |
 | `Get-JibberishUser`        | List all users (UserID + UserName only)         |
-\---
+\---   
 \## First-Time Setup Sequence
 ```
 1\.  Import-Module JibberishManager
