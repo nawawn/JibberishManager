@@ -4,7 +4,7 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 
 **Important Note:** This module is provided as-is and is not a replacement for enterprise-grade secret management systems.
 
-\# JibberishManager — Architecture \& Flow 
+\# JibberishManager — Architecture \& Flow    
 \## Security Model
 
 > Three separate things are required to decrypt any credential.
