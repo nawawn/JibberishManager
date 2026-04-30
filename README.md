@@ -5,14 +5,10 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 **Important Note:** This module is provided as-is and is not a replacement for enterprise-grade secret management systems.
 
 \# JibberishManager — Architecture \& Flow
-
 \## Security Model
 
 > Three separate things are required to decrypt any credential.
-
 > An attacker who obtains any two cannot decrypt anything.
-
-
 
 ```
 
@@ -37,7 +33,6 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 \## Crypto Chain
 
 ```
-
  Per-user Sugar (32 random bytes)
           │   +   JIBBERISH\_MASTER (UTF-8 bytes)
           ▼
@@ -63,9 +58,7 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
           ▼
  Stored as Jibberish in User-Jibberish.json
 ```
-
 \---
-
 \## File Layout
 
 ```
@@ -90,7 +83,6 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
          { "UserID": 2, "Jibberish": "<base64 IV+cipher>" }
        ]
 ```
-
 \---
 
 \## Master Key Resolution
@@ -132,7 +124,7 @@ Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
  Assert MyVault exists
         │
         ▼
- Get-JibberishKey  ──────────────────────────────────►  master key
+ Get-JibberishKey  ───────────────────────►  master key
         │
         ▼
  Load User-Sugar.json  ──►  \[UserSugar\[]]
@@ -167,7 +159,6 @@ Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
         ▼
  "Jibberish saved for 'Alice' (UserID 1)"
 ```
-
 \---
 
 \## Get-Jibberish Flow
@@ -179,7 +170,7 @@ Get-Jibberish -UserName 'Alice'
  Assert MyVault exists
         │
         ▼
- Get-JibberishKey  ──────────────────────────────────►  master key
+ Get-JibberishKey  ───────────────────────►  master key
         │
         ▼
  Load User-Sugar.json  ──►  find Alice  ──►  UserID + Sugar
@@ -207,7 +198,6 @@ Get-Jibberish -UserName 'Alice'
         │
         ▼
  "Copied to clipboard - auto-clears in 10 seconds"
-        │
         │   (10 seconds later, background job runs)
         ▼
  Clipboard.Clear()
@@ -240,9 +230,7 @@ Initialize-JibberishVault
         ▼
  Print verified ACL to console
 ```
-
 \---
-
 \## PowerShell Classes
 
 ```powershell
@@ -257,10 +245,8 @@ class UserJibberish {
    \[string]$Jibberish    # base64-encoded IV + ciphertext
 }
 ```
-
 > Strongly typed classes ensure StrictMode -Version Latest never throws
 > a PropertyNotFound error — every property is guaranteed to exist.
-
 \---
 
 \## Function Reference
@@ -276,7 +262,6 @@ class UserJibberish {
 | `Remove-Jibberish`         | Remove a user from both JSON files              |
 | `Get-JibberishUser`        | List all users (UserID + UserName only)         |
 \---
-
 \## First-Time Setup Sequence
 ```
 1\.  Import-Module JibberishManager
@@ -285,13 +270,10 @@ class UserJibberish {
 3\.  Set-JibberishKey
         └──► Stores JIBBERISH\_MASTER in SYSTEM or USER env var
 4\.  Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
-   Save-Jibberish -UserName 'Bob'   -Data 'Hunter2!'
+     Save-Jibberish -UserName 'Bob'   -Data 'Hunter2!'
         └──► Encrypts and stores credentials for each user
 5\.  Get-JibberishUser
         └──► Lists registered users (no sensitive data shown)
 6\.  Get-Jibberish -UserName 'Alice'
         └──► Decrypts to clipboard, clears after 10 seconds
 ```
-
-
-
