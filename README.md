@@ -4,23 +4,22 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 
 **Important Note:** This module is provided as-is and is not a replacement for enterprise-grade secret management systems.
 
-\# JibberishManager — Architecture \& Flow    
-\## Security Model
+# JibberishManager — Architecture \& Flow    
+## Security Model
 
 > Three separate things are required to decrypt any credential.
 > An attacker who obtains any two cannot decrypt anything.
 
 ```
-
 ┌─────────────────────┐   ┌─────────────────────┐   ┌─────────────────────┐
-│   User-Sugar.json   │   │  User-Jibberish.json │   │  JIBBERISH\_MASTER │
-│                     │   │                      │   │                    │
-│  UserID             │   │  UserID              │   │  Environment var   │
-│  UserName           │   │  Jibberish           │   │  SYSTEM or USER    │
-│  Sugar (base64)     │   │  (base64 IV+cipher)  │   │  level             │
-│                     │   │                      │   │                    │
-│  Public read        │   │  MyVault\\ only      │   │  Never on disk     │
-│  No secrets here    │   │  ACL-restricted      │   │  Survives reboot   │
+│   User-Sugar.json   │   │  User-Jibberish.json│   │  JIBBERISH\_MASTER │
+│                     │   │                     │   │                    │
+│  UserID             │   │  UserID             │   │  Environment var   │
+│  UserName           │   │  Jibberish          │   │  SYSTEM or USER    │
+│  Sugar (base64)     │   │  (base64 IV+cipher) │   │  level             │
+│                     │   │                     │   │                    │
+│  Public read        │   │  MyVault\\ only     │   │  Never on disk     │
+│  No secrets here    │   │  ACL-restricted     │   │  Survives reboot   │
 └─────────────────────┘   └─────────────────────┘   └─────────────────────┘
         (1)                        (2)                        (3)
          │                          │                          │
@@ -31,12 +30,10 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 ```
 \---
 \## Crypto Chain
-
 ```
  Per-user Sugar (32 random bytes)
           │   +   JIBBERISH\_MASTER (UTF-8 bytes)
           ▼
-
  ┌─────────────────────────────────────────┐
  │  PBKDF2  (Rfc2898DeriveBytes)           │
  │  100,000 iterations                     │
@@ -60,7 +57,6 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
 ```
 \---
 \## File Layout
-
 ```
 <ModuleRoot>\\
 │
@@ -83,11 +79,9 @@ Secure PowerShell module for storing and retrieving user secrets using salted en
          { "UserID": 2, "Jibberish": "<base64 IV+cipher>" }
        ]
 ```
-\---
-
-\## Master Key Resolution
-
-```
+\---   
+\## Master Key Resolution   
+```   
 Get-JibberishKey called
         │
         ▼
@@ -111,12 +105,9 @@ Get-JibberishKey called
         ▼
  throw "Run Set-JibberishKey"
 
-```
-
-\---
-
-\## Save-Jibberish Flow
-
+```   
+\---   
+\## Save-Jibberish Flow   
 ```
 Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
         │
@@ -135,8 +126,8 @@ Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
         │
    ┌────┴────┐
   NO        YES
-   │          │
-   ▼          ▼
+   │         │
+   ▼         ▼
  Generate   Reuse existing
  new Sugar  Sugar + UserID
  new UserID
@@ -158,12 +149,10 @@ Save-Jibberish -UserName 'Alice' -Data 'P@ssw0rd!'
         │
         ▼
  "Jibberish saved for 'Alice' (UserID 1)"
-```
-\---
-
-\## Get-Jibberish Flow
-
-```
+```   
+\---   
+\## Get-Jibberish Flow   
+```   
 Get-Jibberish -UserName 'Alice'
         │
         ▼
@@ -201,9 +190,8 @@ Get-Jibberish -UserName 'Alice'
         │   (10 seconds later, background job runs)
         ▼
  Clipboard.Clear()
-```
-\---
-
+```   
+\---   
 \## MyVault ACL
 ```
 Initialize-JibberishVault
@@ -231,15 +219,13 @@ Initialize-JibberishVault
  Print verified ACL to console
 ```
 \---
-\## PowerShell Classes
-
+\## PowerShell Classes   
 ```powershell
 class UserSugar {
    \[int]   $UserID       # int — numeric comparison and sort
    \[string]$UserName
    \[string]$Sugar        # base64-encoded 32-byte random salt
 }
-
 class UserJibberish {
    \[int]   $UserID       # int — matches UserSugar.UserID
    \[string]$Jibberish    # base64-encoded IV + ciphertext
@@ -247,8 +233,7 @@ class UserJibberish {
 ```
 > Strongly typed classes ensure StrictMode -Version Latest never throws
 > a PropertyNotFound error — every property is guaranteed to exist.
-\---
-
+\---   
 \## Function Reference
 | Function                   | Purpose                                         |
 |----------------------------|-------------------------------------------------|
