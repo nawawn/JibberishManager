@@ -246,7 +246,8 @@ class UserJibberish {
 | `Save-Jibberish`           | Encrypt and store a user credential             |
 | `Get-Jibberish`            | Decrypt to clipboard, auto-clear after 10s      |
 | `Remove-Jibberish`         | Remove a user from both JSON files              |
-| `Get-JibberishUser`        | List all users (UserID + UserName only)         |
+| `Get-JibberishUser`        | List all users (UserID + UserName only)         |   
+
 \---   
 \## First-Time Setup Sequence
 ```
